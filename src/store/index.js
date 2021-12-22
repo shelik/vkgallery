@@ -47,10 +47,42 @@ export default new Vuex.Store({
           });
       });
     },
+    get_photos({ commit },
+      galleryIDs) {
+      return new Promise((resolve, reject) => {
+        Axios({
+          url: "/api/get_photos",
+          method: "POST",
+          data:{
+            gallery_ids : galleryIDs,
+            owner_id: "23933287"
+          },
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        })
+          .then((res) => {
+            console.log(res.data);
+            commit("update_state_field", {
+              field: "photos",
+              data: res.data,
+            });
+            resolve(res);
+          })
+          .catch((error) => {
+            if (error.response.status === 401) {
+              commit("logout");
+            }
+            reject(error);
+          });
+      });
+    },
   },
 
   getters: {
     galleries: (state) => state.galleries,
+    photos: (state) => state.photos,
   },
 
   modules: {},
