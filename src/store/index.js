@@ -24,7 +24,7 @@ export default new Vuex.Store({
           method: "GET",
           params: {
             // owner_id: "id375401475",
-            owner_id: "23933287",
+            owner_id: "223454694",
           },
           headers: {
             "Content-Type": "application/json",
