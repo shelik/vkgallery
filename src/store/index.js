@@ -17,14 +17,15 @@ export default new Vuex.Store({
   },
 
   actions: {
-    get_galleries({ commit }) {
+    get_galleries({ commit }, data) {
       return new Promise((resolve, reject) => {
         Axios({
           url: "/api/get_galleries",
           method: "GET",
           params: {
-            // owner_id: "id375401475",
-            owner_id: "223454694",
+            // owner_id: "223454694",
+            owner_id: data.owner_id,
+            token: data.token,
           },
           headers: {
             "Content-Type": "application/json",
@@ -47,15 +48,15 @@ export default new Vuex.Store({
           });
       });
     },
-    get_photos({ commit },
-      galleryIDs) {
+    get_photos({ commit }, data) {
       return new Promise((resolve, reject) => {
         Axios({
           url: "/api/get_photos",
           method: "POST",
-          data:{
-            gallery_ids : galleryIDs,
-            owner_id: "23933287"
+          data: {
+            gallery_ids: data.gallery_ids,
+            owner_id: data.owner_id,
+            token: data.token,
           },
           headers: {
             "Content-Type": "application/json",
