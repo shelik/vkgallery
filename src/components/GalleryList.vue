@@ -95,8 +95,8 @@ export default {
   },
 
   data: () => ({
-    ownerID: Config.TOKEN,
-    token: Config.OWNER_ID,
+    ownerID: Config.OWNER_ID,
+    token: Config.TOKEN,
     selectedGalleries: [],
     galleries: [],
     galleriesHeaders: [
