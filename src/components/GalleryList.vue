@@ -1,11 +1,12 @@
 <template>
   <div>
-    <!-- <v-textarea v-model="testString"> </v-textarea> -->
-    <v-row>
-      <v-col>
+    <v-row class="pa-10">
+      <v-col cols="4">
         <v-text-field
           class="pl-8 pr-8"
           label="ID пользователя"
+          hint="ID пользователя"
+          persistent-hint
           solo
           v-model="ownerID"
         >
@@ -15,6 +16,8 @@
         <v-text-field
           class="pl-8 pr-8"
           label="Токен приложения"
+          hint="Токен приложения"
+          persistent-hint
           solo
           v-model="token"
         >
@@ -33,6 +36,9 @@
         <v-toolbar flat>
           <v-toolbar-title>Список альбомов</v-toolbar-title>
           <v-spacer></v-spacer>
+          <v-btn class="ma-1" color="primary" small @click="getGalleries">
+            Получить альбомы
+          </v-btn>
           <v-btn class="ma-1" color="primary" small @click="getPhotos">
             Получить фото
           </v-btn>
@@ -42,14 +48,14 @@
         </v-toolbar>
       </template>
     </v-data-table>
-    <v-dialog v-model="show" max-width="1000px">
+    <v-dialog v-model="show" max-width="80%">
       <v-card>
         <v-system-bar color="blue darken-2" dark>
           <span class="generator-title"
-            >Выгрузка фотографий альбомов: {{
-          }}</span>
+            >Выгрузка фотографий альбомов: {{ galleryIDsrt }}</span
+          >
           <v-spacer></v-spacer>
-          <v-icon @click="close">mdi-close</v-icon>
+          <v-icon @click.stop="show = false">mdi-close</v-icon>
         </v-system-bar>
 
         <v-card-text>
@@ -80,6 +86,7 @@
 <script>
 /* eslint-disable */
 
+import Config from "../config";
 export default {
   name: "GalleryList",
 
@@ -88,8 +95,8 @@ export default {
   },
 
   data: () => ({
-    ownerID: "",
-    token: "",
+    ownerID: Config.TOKEN,
+    token: Config.OWNER_ID,
     selectedGalleries: [],
     galleries: [],
     galleriesHeaders: [
@@ -106,13 +113,15 @@ export default {
     products: [],
     productHeaders: [
       { text: "id", value: "id" },
-      { text: "id", value: "id" },
-      { text: "id", value: "id" },
-      { text: "id", value: "id" },
-      { text: "id", value: "id" },
-      { text: "id", value: "id" },
+      { text: "album_id", value: "album_id" },
+      { text: "Артикул", value: "vencode" },
+      { text: "Наименование", value: "name" },
+      { text: "Цена", value: "price" },
+      { text: "Контейнер", value: "container" },
+      { text: "Описание", value: "text" },
     ],
     galleryIDsrt: "",
+    show: false,
 
     testString: `Код товара : 9307
 Ткань : Велюр ( халат с поясом )
@@ -129,12 +138,12 @@ export default {
     getGalleries() {
       this.$store
         .dispatch("get_galleries", {
-          owner_id: ownerID,
-          token: token,
+          owner_id: this.ownerID,
+          token: this.token,
         })
         .then(() => {
           this.galleries = this.$store.getters.galleries;
-          console.log("Ok");
+          console.log("Galleries Ok");
         })
         .catch((error) => {
           console.error(error);
@@ -147,65 +156,121 @@ export default {
         String(gl.id)
       );
       this.galleryIDsrt = galleryIDs.toString();
-      console.log(galleryIDs);
+      // console.log(galleryIDs);
+      console.log(
+        "Photos Max count",
+        Math.max(
+          ...Array.from(this.selectedGalleries, (gl) => parseInt(gl.size))
+        )
+      );
+
       this.$store
         .dispatch("get_photos", {
           gallery_ids: galleryIDs,
-          owner_id: ownerID,
-          token: token,
+          owner_id: this.ownerID,
+          token: this.token,
+          count: Math.max(
+            ...Array.from(this.selectedGalleries, (gl) => parseInt(gl.size))
+          ),
         })
         .then(() => {
           this.photos = this.$store.getters.photos;
-          console.log("Photos ok!");
-          console.log(Array.from(this.photos, (ph) => String(ph.text)));
+
+          console.log(
+            "Photos ok! Max count",
+            Math.max(
+              ...Array.from(this.selectedGalleries, (gl) => parseInt(gl.size))
+            )
+          );
+
+          this.openPhotos();
+          // console.log(Array.from(this.photos, (ph) => String(ph.text)));
         })
         .catch((error) => {
           console.error(error);
           return;
         });
     },
-    parseDescription(description) {
-      console.log(description);
+    openPhotos() {
+      console.log(this.photos);
+      this.photos.forEach((ph) => {
+        this.parseDescription(ph);
+      });
+      this.show = true;
+    },
 
-      const conteinerRegexp = /\(.\s\d{1,4}\)/;
-      let conteinerMatch = conteinerRegexp.exec(this.testString);
+    parseDescription(product) {
+      const description = product.text;
+      // console.log(description);
+
+      const conteinerRegexp = /\(.\s*\d{1,4}\)/;
+      let conteinerMatch = conteinerRegexp.exec(description);
       // let s = this.testString.match(conteinerRegexp)
-      const [container] = conteinerMatch;
-      console.log(container);
+      let container = "";
+      if (conteinerMatch) {
+        [container] = conteinerMatch;
+      }
+      // console.log(container);
       // console.log(regex.test(this.testString));
 
       const pricestrRegexp = /(Цена)(\s*)(.)(\s*)(\d{1,5})(\s*)грн/;
-      let pricestrMatch = pricestrRegexp.exec(this.testString);
-      const [pricestr] = pricestrMatch;
-      console.log(pricestr);
+      let pricestrMatch = pricestrRegexp.exec(description);
+      let pricestr = "";
+      if (pricestrMatch) {
+        [pricestr] = pricestrMatch;
+      }
+      // console.log(pricestr);
 
       const priceRegexp = /\d+/;
       let priceMatch = priceRegexp.exec(pricestr);
-      const [price] = priceMatch;
-      console.log(price);
+      let price = "";
+      if (priceMatch) {
+        [price] = priceMatch;
+      }
+      // console.log(price);
 
       const modelstrRegexp =
-        /(мод|(код товара))(\s*)(.*)(\s*)(\d{1,5})\s(([А-я]*)(\s*))/i;
-      let modelstrMatch = modelstrRegexp.exec(this.testString);
-      console.log(modelstrMatch);
-      const [modelstr] = modelstrMatch;
-      console.log(modelstr);
+        /(модель|мод|(код товара))(\s*)(.*)(\s*)(\d{1,5})\s(([А-я]*)(\s*))/i;
+      let modelstrMatch = modelstrRegexp.exec(description);
+      // console.log(modelstrMatch);
+      let modelstr = "";
+      if (modelstrMatch) {
+        [modelstr] = modelstrMatch;
+      }
+      // console.log(modelstr);
 
       const modelArray = modelstr.trim().split(" ");
-      console.log(modelArray);
+      // console.log(modelArray);
       if (modelArray.length) {
         const productname = modelArray[modelArray.length - 1];
         const modelRegexp = /(\d+)/;
         let modelMatch = modelRegexp.exec(productname);
-        const [model] = modelMatch;
-        console.log("Vencode: ", model);
+        var model = "";
+        if (modelMatch) {
+          [model] = modelMatch;
+        }
+        // console.log("Vencode: ", model);
 
         const nameRegexp = /(\W+)/;
         let nameMatch = nameRegexp.exec(productname);
-        const [name] = nameMatch;
-        console.log("Name: ", name.trim());
+        var name = "";
+        if (nameMatch) {
+          [name] = nameMatch;
+        }
+        // console.log("Name: ", name.trim());
       }
+
+      this.products.push({
+        id: product.id,
+        album_id: product.album_id,
+        vencode: model,
+        name: name,
+        price: price,
+        container: container,
+        text: product.text,
+      });
     },
+    save() {},
   },
 };
 </script>

@@ -33,7 +33,6 @@ export default new Vuex.Store({
           },
         })
           .then((res) => {
-            console.log(res.data);
             commit("update_state_field", {
               field: "galleries",
               data: res.data,
@@ -57,6 +56,7 @@ export default new Vuex.Store({
             gallery_ids: data.gallery_ids,
             owner_id: data.owner_id,
             token: data.token,
+            count: data.count,
           },
           headers: {
             "Content-Type": "application/json",
