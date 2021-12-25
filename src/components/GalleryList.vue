@@ -42,9 +42,9 @@
           <v-btn class="ma-1" color="primary" small @click="getPhotos">
             Получить фото
           </v-btn>
-          <v-btn class="ma-1" color="primary" small @click="parseDescription">
+          <!-- <v-btn class="ma-1" color="primary" small @click="parseDescription">
             Парсить строку
-          </v-btn>
+          </v-btn> -->
         </v-toolbar>
       </template>
     </v-data-table>
@@ -66,7 +66,18 @@
               :items="products"
               :headers="productHeaders"
               :options="{ itemsPerPage: -1 }"
+              show-select
+              v-model="selectedPhotos"
             >
+              <template v-slot:[`item.text`]="{ item }">
+                <v-textarea
+                  dense
+                  class="pa-1 ma-1 clear-table-input-field"
+                  v-model="item.text"
+                  @change="parseItem(item)"
+                >
+                </v-textarea>
+              </template>
             </v-data-table>
           </v-container>
         </v-card-text>
@@ -91,13 +102,16 @@ export default {
   name: "GalleryList",
 
   created() {
+    this.ownerID = Config.OWNER_ID;
+    this.token = Config.TOKEN;
     this.getGalleries();
   },
 
   data: () => ({
-    ownerID: Config.OWNER_ID,
-    token: Config.TOKEN,
+    ownerID: "",
+    token: "",
     selectedGalleries: [],
+    selectedPhoto:[],
     galleries: [],
     galleriesHeaders: [
       { text: "id", value: "id" },
@@ -136,13 +150,16 @@ export default {
 
   methods: {
     getGalleries() {
+      this.galleries.length = 0;
       this.$store
         .dispatch("get_galleries", {
           owner_id: this.ownerID,
           token: this.token,
         })
         .then(() => {
-          this.galleries = this.$store.getters.galleries;
+          if (this.$store.getters.galleries) {
+            this.galleries = this.$store.getters.galleries;
+          }
           console.log("Galleries Ok");
         })
         .catch((error) => {
@@ -194,14 +211,13 @@ export default {
     openPhotos() {
       console.log(this.photos);
       this.photos.forEach((ph) => {
-        this.parseDescription(ph);
+        this.addProduct(ph);
       });
       this.show = true;
     },
 
-    parseDescription(product) {
+    parseProduct(product){
       const description = product.text;
-      // console.log(description);
 
       const conteinerRegexp = /\(.\s*\d{1,4}\)/;
       let conteinerMatch = conteinerRegexp.exec(description);
@@ -230,7 +246,8 @@ export default {
       // console.log(price);
 
       const modelstrRegexp =
-        /(модель|мод|(код товара))(\s*)(.*)(\s*)(\d{1,5})\s(([А-я]*)(\s*))/i;
+        /^[\bМод\b]*[\BМодель\B]*[\BКод товара\B]*[\s]*[\.]*[\:]*[\№]*[№\.]*[\s]*\d{1,5}[\.]*\s+[А-я]+/i;
+      // /(модель|мод|(код товара))(\s*)(.*)(\s*)(\d{1,5})\s(([А-я]*)(\s*))/i;
       let modelstrMatch = modelstrRegexp.exec(description);
       // console.log(modelstrMatch);
       let modelstr = "";
@@ -238,29 +255,29 @@ export default {
         [modelstr] = modelstrMatch;
       }
       // console.log(modelstr);
+      const modelRegexp = /(\d+)/;
+      let modelMatch = modelRegexp.exec(modelstr);
+      var model = "";
+      if (modelMatch) {
+        [model] = modelMatch;
+      }
+      console.log("Vencode: ", model);
 
       const modelArray = modelstr.trim().split(" ");
       // console.log(modelArray);
+      var name = "";
       if (modelArray.length) {
-        const productname = modelArray[modelArray.length - 1];
-        const modelRegexp = /(\d+)/;
-        let modelMatch = modelRegexp.exec(productname);
-        var model = "";
-        if (modelMatch) {
-          [model] = modelMatch;
-        }
-        // console.log("Vencode: ", model);
+        name = modelArray[modelArray.length -1]
 
-        const nameRegexp = /(\W+)/;
-        let nameMatch = nameRegexp.exec(productname);
-        var name = "";
-        if (nameMatch) {
-          [name] = nameMatch;
-        }
+        // const nameRegexp = /(\W+)/;
+        // let nameMatch = nameRegexp.exec(productname);
+        // var name = "";
+        // if (nameMatch) {
+        //   [name] = nameMatch;
+        // }
         // console.log("Name: ", name.trim());
       }
-
-      this.products.push({
+      return {
         id: product.id,
         album_id: product.album_id,
         vencode: model,
@@ -268,9 +285,22 @@ export default {
         price: price,
         container: container,
         text: product.text,
-      });
+      };
     },
-    save() {},
+
+    addProduct(product) {
+      this.products.push(this.parseProduct(product));
+    },
+
+    save() {
+
+    },
+
+    parseItem(item){
+      const editedIndex = this.products.findIndex((el)=>el.id === item.id) 
+      const parsedItem = this.parseProduct(item);
+      this.products.splice(editedIndex, 1, parsedItem);
+    }
   },
 };
 </script>
