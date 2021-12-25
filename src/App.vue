@@ -14,10 +14,7 @@
 
       <v-spacer></v-spacer>
 
-      <v-btn
-        text
-        @click="settingsDialog = true"
-      >
+      <v-btn text @click="openSettings">
         <span class="mr-2">Настройки</span>
         <v-icon>mdi-open-in-new</v-icon>
       </v-btn>
@@ -26,6 +23,38 @@
     <v-main>
       <router-view />
     </v-main>
+    <v-dialog v-model="settingsDialog" max-width="300px">
+      <v-card>
+        <v-system-bar color="blue darken-2" dark>
+          <span class="generator-title">Настройки</span>
+          <v-spacer></v-spacer>
+          <v-icon @click.stop="settingsDialog = false">mdi-close</v-icon>
+        </v-system-bar>
+
+        <v-card-text>
+          <v-container fluid>
+            <v-text-field
+              label="Начинать нумерацию товаров с:"
+              filled
+              v-model.number="lastID"
+            >
+            </v-text-field>
+          </v-container>
+        </v-card-text>
+
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn
+            color="blue darken-1"
+            text
+            @click.stop="settingsDialog = false"
+          >
+            Отменить
+          </v-btn>
+          <v-btn color="blue darken-1" text @click="save"> Сохранить </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-app>
 </template>
 
@@ -35,6 +64,23 @@ export default {
 
   data: () => ({
     settingsDialog: false,
+    lastID: 0,
   }),
+
+  created() {
+    this.lastID = localStorage.getItem("last_vencode");
+  },
+
+  methods: {
+    openSettings(){
+      this.lastID = localStorage.getItem("last_vencode");
+      this.settingsDialog = true;
+    },
+
+    save() {
+      localStorage.setItem("last_vencode", this.lastID);
+      this.settingsDialog = false;
+    },
+  },
 };
 </script>

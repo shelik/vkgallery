@@ -69,6 +69,19 @@
               show-select
               v-model="selectedPhotos"
             >
+              <template v-slot:top>
+                <v-toolbar flat>
+                  <v-toolbar-title>Список фотографий</v-toolbar-title>
+                  <v-spacer></v-spacer>
+                  <v-btn class="ma-1" color="primary" small @click="exportCSV">
+                    Выгрузить
+                  </v-btn>
+                  <!-- <v-btn class="ma-1" color="primary" small @click="parseDescription">
+                    Парсить строку
+                  </v-btn> -->
+                </v-toolbar>
+              </template>
+
               <template v-slot:[`item.text`]="{ item }">
                 <v-textarea
                   dense
@@ -111,7 +124,7 @@ export default {
     ownerID: "",
     token: "",
     selectedGalleries: [],
-    selectedPhoto:[],
+    selectedPhotos: [],
     galleries: [],
     galleriesHeaders: [
       { text: "id", value: "id" },
@@ -136,6 +149,24 @@ export default {
     ],
     galleryIDsrt: "",
     show: false,
+    exportTable: [
+      {
+        vencode: "Артикул",
+        name: "Найменування",
+        unit: "Одиниця виміру",
+        strength: "Міцність (для ТТН)",
+        ratePDV: "Ставка ПДВ",
+        rateAP: "Ставка АП",
+        packaging: "Вид пакування вантажу",
+        type: "Тип",
+        price: "Ціна",
+        codeUKTZED: "Код УКТЗЕД",
+        import: "Ознака імп товару",
+        barcode: "Штрих-код",
+        barcode2: "Штрих-код2",
+        group: "Група",
+      },
+    ],
 
     testString: `Код товара : 9307
 Ткань : Велюр ( халат с поясом )
@@ -216,7 +247,7 @@ export default {
       this.show = true;
     },
 
-    parseProduct(product){
+    parseProduct(product) {
       const description = product.text;
 
       const conteinerRegexp = /\(.\s*\d{1,4}\)/;
@@ -254,20 +285,29 @@ export default {
       if (modelstrMatch) {
         [modelstr] = modelstrMatch;
       }
-      // console.log(modelstr);
+      console.log(modelstr);
+      const nameRegexp = /\d{1,5}[\s]*\D+/;
+      let nameMatch = nameRegexp.exec(modelstr);
+      console.log(nameMatch);
+      var name = "";
+      if (nameMatch) {
+        [name] = nameMatch;
+      }
+      // console.log("Vencode: ", model);
+
       const modelRegexp = /(\d+)/;
       let modelMatch = modelRegexp.exec(modelstr);
       var model = "";
       if (modelMatch) {
         [model] = modelMatch;
       }
-      console.log("Vencode: ", model);
+      // console.log("Vencode: ", model);
 
-      const modelArray = modelstr.trim().split(" ");
+      // const modelArray = modelstr.trim().split(" ");
       // console.log(modelArray);
-      var name = "";
-      if (modelArray.length) {
-        name = modelArray[modelArray.length -1]
+      // var name = "";
+      // if (modelArray.length) {
+      //   name = modelArray[modelArray.length - 1];
 
         // const nameRegexp = /(\W+)/;
         // let nameMatch = nameRegexp.exec(productname);
@@ -276,12 +316,13 @@ export default {
         //   [name] = nameMatch;
         // }
         // console.log("Name: ", name.trim());
-      }
+      // }
       return {
         id: product.id,
         album_id: product.album_id,
         vencode: model,
         name: name,
+        // name: modelstr,
         price: price,
         container: container,
         text: product.text,
@@ -292,15 +333,55 @@ export default {
       this.products.push(this.parseProduct(product));
     },
 
-    save() {
+    save() {},
 
-    },
-
-    parseItem(item){
-      const editedIndex = this.products.findIndex((el)=>el.id === item.id) 
+    parseItem(item) {
+      const editedIndex = this.products.findIndex((el) => el.id === item.id);
       const parsedItem = this.parseProduct(item);
       this.products.splice(editedIndex, 1, parsedItem);
-    }
+    },
+    exportCSV() {
+      let vencode = localStorage.getItem("last_vencode");
+      if (!vencode) {
+        vencode = 1;
+      }
+      this.exportTable.length = 1;
+      this.selectedPhotos.forEach((photo) => {
+        this.exportTable.push({
+          vencode: vencode,
+          name: photo.name,
+          unit: "шт",
+          strength: "0",
+          ratePDV: "0",
+          rateAP: "",
+          packaging: "",
+          type: "0",
+          price: photo.price,
+          codeUKTZED: "",
+          import: "0",
+          barcode: "",
+          barcode2: "0",
+          group: photo.container,
+        });
+        vencode++;
+      });
+      localStorage.setItem("last_vencode",vencode)
+
+      var win = window.open();
+      let strHTML = "data:text/csv;charset=utf-8,";
+      this.exportTable.forEach((element) => {
+        strHTML = strHTML + `${element.vencode};${element.name};${element.unit};${element.strength};${element.ratePDV};${element.rateAP};${element.packaging};${element.type};${element.price};${element.codeUKTZED};${element.import};${element.barcode};${element.barcode2};${element.group};
+`;
+      });
+      var encodedUri = encodeURI(strHTML);
+      var link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "my_data.csv");
+      document.body.appendChild(link); 
+      link.click();
+      console.log(strHTML);
+      // win.document.write(strHTML);
+    },
   },
 };
 </script>
