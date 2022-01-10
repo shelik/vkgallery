@@ -309,13 +309,13 @@ export default {
       // if (modelArray.length) {
       //   name = modelArray[modelArray.length - 1];
 
-        // const nameRegexp = /(\W+)/;
-        // let nameMatch = nameRegexp.exec(productname);
-        // var name = "";
-        // if (nameMatch) {
-        //   [name] = nameMatch;
-        // }
-        // console.log("Name: ", name.trim());
+      // const nameRegexp = /(\W+)/;
+      // let nameMatch = nameRegexp.exec(productname);
+      // var name = "";
+      // if (nameMatch) {
+      //   [name] = nameMatch;
+      // }
+      // console.log("Name: ", name.trim());
       // }
       return {
         id: product.id,
@@ -347,9 +347,13 @@ export default {
       }
       this.exportTable.length = 1;
       this.selectedPhotos.forEach((photo) => {
+        let idx = this.exportTable.findIndex((el) => el.name === photo.name.trim());
+        if (idx !== -1) {
+          return;
+        }
         this.exportTable.push({
           vencode: vencode,
-          name: photo.name,
+          name: photo.name.trim(),
           unit: "шт",
           strength: "0",
           ratePDV: "0",
@@ -365,19 +369,21 @@ export default {
         });
         vencode++;
       });
-      localStorage.setItem("last_vencode",vencode)
+      localStorage.setItem("last_vencode", vencode);
 
       var win = window.open();
       let strHTML = "data:text/csv;charset=utf-8,";
       this.exportTable.forEach((element) => {
-        strHTML = strHTML + `${element.vencode};${element.name};${element.unit};${element.strength};${element.ratePDV};${element.rateAP};${element.packaging};${element.type};${element.price};${element.codeUKTZED};${element.import};${element.barcode};${element.barcode2};${element.group};
+        strHTML =
+          strHTML +
+          `${element.vencode};${element.name};${element.unit};${element.strength};${element.ratePDV};${element.rateAP};${element.packaging};${element.type};${element.price};${element.codeUKTZED};${element.import};${element.barcode};${element.barcode2};${element.group};
 `;
       });
       var encodedUri = encodeURI(strHTML);
       var link = document.createElement("a");
       link.setAttribute("href", encodedUri);
       link.setAttribute("download", "my_data.csv");
-      document.body.appendChild(link); 
+      document.body.appendChild(link);
       link.click();
       console.log(strHTML);
       // win.document.write(strHTML);

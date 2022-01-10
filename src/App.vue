@@ -72,7 +72,7 @@ export default {
   },
 
   methods: {
-    openSettings(){
+    openSettings() {
       this.lastID = localStorage.getItem("last_vencode");
       this.settingsDialog = true;
     },
